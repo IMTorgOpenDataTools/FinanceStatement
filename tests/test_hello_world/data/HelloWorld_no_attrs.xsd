@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HelloWorld Example -->
+<!-- Date/time created: 2025-08-23 19:56:07.375545 -->
+
+<schema  xmlns="http://www.w3.org/2001/XMLSchema"
+         xmlns:xbrli="http://www.xbrl.org/2003/instance"
+         xmlns:link="http://www.xbrl.org/2003/linkbase"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:HelloWorld="http://xbrl.squarespace.com/HelloWorld"
+         targetNamespace="http://xbrl.squarespace.com/HelloWorld"
+         elementFormDefault="qualified"
+         attributeFormDefault="unqualified">
+
+   <import
+      namespace="http://www.xbrl.org/2003/instance"
+      schemaLocation="http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd" />
+
+   <element
+       name="Element1"
+       type="Type1"
+       substitutionGroup="Group1"
+       xbrli:periodType="Period1" />
+
+   <element
+       name="Element2"
+       type="Type2"
+       substitutionGroup="Group2"
+       xbrli:periodType="Period2" />
+
+</schema>
