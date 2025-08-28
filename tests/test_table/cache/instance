@@ -1,0 +1,21 @@
+[xbrl:schemaImportMissing] Instance facts missing schema concept definition: mycorp:TotalAssets - simple_xbrl_instance.xml 25
+[info] loaded in 0.05 secs at 2025-08-28T02:51:17 - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[info] validated in 0.00 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[xbrl:schemaImportMissing] Instance facts missing schema concept definition: mycorp:TotalAssets - simple_xbrl_instance.xml 25
+[info] loaded in 0.01 secs at 2025-08-28T02:51:19 - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[info] validated in 0.01 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[xbrl:schemaImportMissing] Instance facts missing schema concept definition: mycorp:TotalAssets - simple_xbrl_instance.xml 25
+[info] loaded in 0.11 secs at 2025-08-28T02:52:13 - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[info] validated in 0.01 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[xbrl:schemaImportMissing] Instance facts missing schema concept definition: mycorp:TotalAssets - simple_xbrl_instance.xml 25
+[info] loaded in 0.03 secs at 2025-08-28T02:54:22 - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[info] validated in 0.01 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[xbrl:schemaImportMissing] Instance facts missing schema concept definition: mycorp:TotalAssets - simple_xbrl_instance.xml 25
+[info] loaded in 0.03 secs at 2025-08-28T02:54:48 - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[info] validated in 0.01 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/simple_xbrl_instance.xml 
+[webCache:download] Downloaded http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd - 
+[webCache:download] Downloaded http://www.xbrl.org/2003/xbrl-linkbase-2003-12-31.xsd - 
+[webCache:download] Downloaded http://www.xbrl.org/2003/xl-2003-12-31.xsd - 
+[webCache:download] Downloaded http://www.xbrl.org/2003/xlink-2003-12-31.xsd - 
+[info] loaded in 0.58 secs at 2025-08-28T03:00:18 - /workspaces/Vba2Py_XBRL/tests/test_table/data/HelloWorld.xml 
+[info] validated in 0.01 secs - /workspaces/Vba2Py_XBRL/tests/test_table/data/HelloWorld.xml 

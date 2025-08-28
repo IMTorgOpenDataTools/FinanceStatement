@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "arelle>=2.2",
+    "arelle-release>=2.37.50",
     "lxml>=6.0.1",
 ]
 
@@ -15,7 +17,13 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--strict-markers"
 testpaths = [
-  "tests/test_hello_world",
-  "tests/utils",
+  "tests/test_table"
+]
+norecursedirs = [
+  ".vscode",
+  "config",
+  "logs",
 ]

@@ -1,0 +1,39 @@
+<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance"
+            xmlns:mycorp="http://www.mycompany.com/reporting/2025"
+            xmlns:iso4217="http://www.xbrl.org/2003/iso4217"
+            xml:lang="en">
+
+  <xbrli:context id="ctx1">
+    <xbrli:entity>
+      <xbrli:identifier scheme="http://www.sec.gov/CIK">0001234567</xbrli:identifier>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:instant>2025-12-31</xbrli:instant>
+    </xbrli:period>
+  </xbrli:context>
+
+  <xbrli:context id="ctx2">
+    <xbrli:entity>
+      <xbrli:identifier scheme="http://www.sec.gov/CIK">0001234567</xbrli:identifier>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:startDate>2025-01-01</xbrli:startDate>
+      <xbrli:endDate>2025-12-31</xbrli:endDate>
+    </xbrli:period>
+  </xbrli:context>
+
+  <mycorp:TotalAssets contextRef="ctx2" unitRef="usd">
+    1000000.00
+  </mycorp:TotalAssets>
+
+  <xbrli:unit id="usd">
+    <xbrli:unitNumerator>
+      <xbrli:unitMultiplier>1</xbrli:unitMultiplier>
+      <xbrli:unitDivisor>1</xbrli:unitDivisor>
+    </xbrli:unitNumerator>
+    <xbrli:unitDenominator>
+      <xbrli:unitSymbol>USD</xbrli:unitSymbol>
+    </xbrli:unitDenominator>
+  </xbrli:unit>
+
+</xbrli:xbrl>

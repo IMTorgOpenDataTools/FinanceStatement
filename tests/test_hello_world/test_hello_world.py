@@ -9,8 +9,8 @@ __version__ = "0.1.0"
 __license__ = "AGPL-3.0"
 
 
-from src.bas_create_taxonomy import generate_taxonomy as gt
-from src.bas_create_instance_doc import None
+from src.vba.bas_create_taxonomy import generate_taxonomy as gt
+#from src.vba.bas_create_instance_doc import None
 from src.utils import are_xml_files_identical_lxml
 
 
