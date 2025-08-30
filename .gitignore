@@ -1,7 +1,7 @@
 #Custom
 .DS_Store
 tests/test_table/cache
-
+tests/test_table/logs
 
 
 # Python Byte-compiled / optimized / DLL files

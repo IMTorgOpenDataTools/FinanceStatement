@@ -9,84 +9,58 @@ __author__ = "Jason Beach"
 __version__ = "0.1.0"
 __license__ = "AGPL-3.0"
 
-
+import arelle
 from arelle.api.Session import Session
 from arelle.logging.handlers.StructuredMessageLogHandler import StructuredMessageLogHandler
 from arelle.RuntimeOptions import RuntimeOptions
+from arelle.ModelXbrl import ModelXbrl
 
 import xml.etree.ElementTree as ET
+from lxml import etree
 
 from pathlib import Path
 import io
 import os
 import zipfile
-
-
-class TableFactory():
-    """..."""
-
-    def __init__(self, logfile_dir):
-        local_cache_path = os.path.abspath('/workspaces/Vba2Py_XBRL/tests/test_table/cache')
-        self.options = {
-            'entrypointFile': None,
-            #'disclosureSystemName': 'esef',
-            'keepOpen': True, #prevent an open xbrl_model from being automatically closed after a session completes
-
-            'internetConnectivity': 'online',
-            'xdgConfigHome': local_cache_path,
-            'internetLogDownloads': True, #options: log downloads to confirm cacheing
-
-            'logFile': Path(logfile_dir),
-            'logFormat': "[%(messageCode)s] %(message)s - %(file)s",
-            #'packages': None, #tells arelle where to find taxonomy packages (complex, multi-file xbrl taxonomies that are distributed as .zip files)
-            #'plugins': 'validate/ESEF',
-            'validate': True,
-        }
-
-    def create_xbrl_instance_table(self, path_or_str):
-        """Create instance."""
-        table = Instance(
-            options=RuntimeOptions(**self.options),
-            name='instance',
-            path_or_str=path_or_str
-        )
-        return table
-    
-    def create_xbrl_schema_table(self, path_or_str):
-        """Create schema."""
-        table = Taxonomy(
-            options=RuntimeOptions(**self.options),
-            name='schema',
-            path_or_str=path_or_str
-        )
-        return table
-
-
+import copy
+import datetime
 
 
 class Table:
-    """..."""
+    """Table class
+    
+    Note:
+        * XBRL (xbrl_model) and DTS refer to the same collection of docs
+        * XBRL must be instantiated with either instance doc or taxonomy
+        * session.models() contains the doc collection
+    """
 
-    def __init__(self, options, name, path_or_str=None):
-        #initialize arelle
-        options.logFile = str( Path(options.logFile) / name)
-        self.options = options
+    supported_suffixes = ['.xsd', '.xbrl', '.xbrli']
+    schema_suffix = supported_suffixes[:1]
+    instance_suffix = supported_suffixes[1:]
 
-        #attrs
-        self.xbrl_model = self.add_xbrl_model(path_or_str)
-        #self.add_taxonomy
-        #self.add_t_account()
+    def __init__(self, options, name, filepath=None):
+        #initialize
+        self.options = RuntimeOptions(**options)
+        self.name = name
+        filepath = Path(filepath)
+        if filepath.is_file() and filepath.suffix in Table.instance_suffix:
+            #instance provided
+            self.xbrl_model = self.load_xbrl(filepath)
+        elif filepath.is_file() and filepath.suffix in Table.schema_suffix:
+            #taxonomy provided
+            self.xbrl_model = self.load_xbrl(filepath)
+        else:
+            #apply default taxonomy
+            self.xbrl_model = self.create_default_schema()
+        self.fact_rows = []
         self.constraints = {}
 
     def __repr__(self):
         pass    
 
-    def add_xbrl_model(self, path_or_str):
-        if path_or_str:
-            return self.load_xbrl(path_or_str)
-        else:
-            return path_or_str
-        
+    # SETTERS
+
     def validate_xbrl(self, model_xbrls):
         """Validate XBRL string as either instance or taxonomy.  All
         error-handling logic is contained, here.
@@ -119,7 +93,7 @@ class Table:
             print(f"an unexpected error occurred during validation: {e}")
             return False
     
-    def load_xbrl(self, path_or_str=None):
+    def load_xbrl(self, filepath=None):
         """Load xbrl from a file path or directly from string.
         
         Note:
@@ -141,19 +115,8 @@ class Table:
             discovered and loaded DTS, represented by the ModelXbrl object.
 
         """
-        #prepare input
-        path = Path(path_or_str)
-        if path.is_file():
-            with open(path, 'r') as f:
-                content = f.read()
-        else:
-            content = path_or_str
-        self.instance = content
         #prepare options
-        filelike_content = io.StringIO(content) #TODO:remove???
-        if not filelike_content:
-            raise Exception(f'there was an error in loading xbrl: {path_or_str}')
-        self.options.entrypointFile = path_or_str  #filelike_content
+        self.options.entrypointFile = str(filepath)  #filelike_content
         self.options.validate = True
         #run
         with Session() as session:
@@ -163,6 +126,119 @@ class Table:
             self.validate_xbrl(xbrl_models)
         return xbrl_model
     
+    def create_instance_from_taxonomy(self, instance_path):
+        """After XBRL is loaded with taxonomy, create the instance doc.
+        
+        #TODO: perform testing on each step
+        """
+        #checks
+        if not Path(instance_path).suffix in ['.xbrl', '.ixbrl']:
+            raise Exception(f'must provide a path for the new instance doc')
+        if Path(self.options.entrypointFile).suffix != '.xsd':
+            raise Exception(f'options entrypointFile suffix must be .xsd')
+        with Session() as session:
+            #prepare schema
+            session.run(self.options)
+            xbrl_models = [
+                mdl for mdl in session.get_models() 
+                if mdl.uri==self.options.entrypointFile
+                and mdl.modelDocument.type==2   #denotes schema doc
+                ]
+            if len(xbrl_models)==1:
+                taxonomy_dts = xbrl_models[0]
+            else:
+                raise Exception(f'more than one primary xbrl_models')
+            self.validate_xbrl([taxonomy_dts])
+            #create instance
+            #xbrl = taxonomy_dts.modelManager.modelXbrl #or taxonomy_dts.createInstance(url=instance_path)
+            taxonomy_dts.createInstance(url=str(instance_path))
+            assert session.get_models()[0].modelDocument.type == 4  #denotes instance doc
+            #instance_model = taxonomy_dts.modelManager.create(
+            #    newDocumentType=4, 
+            #    url=instance_path, 
+            #    schemaRefs=taxonomy_dts.modelDocument.uri  #taxonomy_dts.modelDocument.targetDocumentSchemaRefs or referencesDocument ???
+            #    )
+            priItem_qname = list(taxonomy_dts.qnameUtrUnits.keys())[232]  #or arelle.ModelValue.QName('http://fasb.org/us-gaap/2015-01-31', 'us-gaap:CashAndCashEquivalentsAtCarryingValue')
+            context = taxonomy_dts.createContext(
+                entityIdentScheme='http://www.sec.gov/cik', 
+                entityIdentValue='0000000001',
+                periodType='duration',
+                periodStart=datetime.date(2024,1,1),
+                periodEndInstant=datetime.date(2024,12,31),
+                priItem=priItem_qname,  #primary item is either QName object of a taxonomy concept, or None if context is dimensional and its purpose is to define only the dimensions
+                dims={},    #dimensional elements
+                segOCCs=[], #segment information
+                scenOCCs=[] #scenario information
+            )
+            unit = taxonomy_dts.createUnit(
+                multiplyBy=[arelle.ModelValue.qname('iso4217:USD')],
+                divideBy=[]
+            )
+            concept_name = [c for c,v in taxonomy_dts.qnameConcepts.items()][0]
+            fact = taxonomy_dts.createFact(
+                concept_name,
+                attributes={"contextRef": context.id, "unitRef": unit.id, "decimals": "2"},
+                text="10000.50",
+            )
+        self.xbrl_model = taxonomy_dts
+        return True
+
+    def create_default_schema(self, xbrl_model=None):
+        """Get a default schema if Table not provided with either
+        instance doc or taxonomy.
+        
+        TODO: get from data/ file
+        
+        """
+        if not xbrl_model:
+            schema_content = """<?xml version="1.0" encoding="UTF-8"?>
+            <schema xmlns="http://www.w3.org/2001/XMLSchema"
+                    xmlns:xbrli="http://www.xbrl.org/2003/instance"
+                    xmlns:example="http://example.com/xbrl/taxonomy"
+                    targetNamespace="http://example.com/xbrl/taxonomy"
+                    elementFormDefault="qualified">
+                <import namespace="http://www.xbrl.org/2003/instance"
+                        schemaLocation=""http://www.xbrl.org/2003/xbrl-instance-2003-12-31.xsd"/>
+
+                <element name="ExampleConcept" type="xbrli:monetaryItemType" substitutionGroup="xbrl:item"/>
+            </schema>
+            """
+        else:
+            #TODO:review creation steps and compare with above^^^ method: create_instance_from_taxonomy()
+            #add ns definitions for the schema and instance
+            xbrl_model.addNamespace()
+            #add schema reference; typically remote in the real-world
+            xbrl_model.schemaRefs.append(
+                xbrl_model.createModelDocument(
+                    file=os.path.abspath("example-schema.xsd"),
+                    isEntry=False,
+                    isSchema=True,
+                    url=os.path.abspath("example-schema.xsd")
+            ))
+            #add context (entity and period) for the fact
+            context_ref = xbrl_model.createContext(
+                entityIdentScheme="http:/www.sec.gov/CIK",
+                entityIdentValue="1234567890",
+                periodType="duration",
+                periodStart="2024-01-01",
+                periodEndInstance="2024-12-31"
+            ).id
+            #add unit for the numeric fact
+            unit_ref = xbrl_model.createUnit(
+                uomQname="iso4217:USD"
+            ).id
+            #create and add fact from custom schema
+            concept_qnam = xbrl_model("example:ExampleConcept")
+            xbrl_model.createFact(
+                concept_qnam,
+                attributes={"contextRef": context_ref, "unitRef": unit_ref, "decimals": "2"},
+                text="10000.50",
+            )
+            schema_content = '^^^WTF'
+        return schema_content
+    
+    # GETTERS
+
     def get_metadata(self):
         """Get the xbrl model metadata.
         
@@ -179,7 +255,62 @@ class Table:
             'relationships': self.xbrl_model.relationshipSets
         }
         return metadata
+
+    def get_dts_docs(self, verbose=False):
+        """Get the xbrl model DTS documents.
         
+        Usage:
+            metadata = table.get_dts_docs()
+        """
+        all_docs = list(self.xbrl_model.urlDocs.values())
+        if verbose:
+            for doc in all_docs:
+                print(f"URI: {doc.uri}")
+                print(f"Type: {doc.type}")  #example: 1 for SCHEMA, 2 for LINKBASE, 3 for INSTANCE
+                print("-" * 20)
+        return all_docs
+    
+    def get_instance(self):
+        """Get ModelXbrl's document and serialize it.
+        """
+        instance_doc = self.xbrl_model.modelDocument.xmlDocument
+        if instance_doc:
+            return etree.tostring(instance_doc, pretty_print=True, encoding='unicode')
+
+    def get_schema(self, as_string=False, verbose=False):
+        """Get XBRL schema with options for etree (as_string)
+        and print list (verbose).
+        """
+        schema_documents = [
+            doc for doc in self.xbrl_model.urlDocs.values()
+            if doc.type == arelle.ModelDocument.Type.SCHEMA
+        ]
+        if schema_documents:
+            if verbose:
+                for schema_doc in schema_documents:
+                    print(f"- {schema_doc.basename}")
+                    print(f"- URI: {schema_doc.uri}")
+                    print(f"- File path: {schema_doc.filepath}")
+            if as_string:
+                only_first_schema = schema_documents[0]
+                schema_root = only_first_schema.xmlRootElement
+                schema_documents = etree.tostring(schema_root, pretty_print=True, encoding='unicode')
+        return schema_documents
+    
+    def get_facts(self):
+        """Get xbrl instance facts.
+        
+        Usage:
+            facts = table.get_facts()
+            print( facts[0].qname.localName )
+            print( facts[0].value )
+            print( facts[0].contextID )
+        """
+        if self.xbrl_model:
+            return list(self.xbrl_model.facts)
+
+    # EXPORT
+      
     def to_file(self, filepath):
         """Export Instance and DTS package to filepath.
         
@@ -230,31 +361,6 @@ class Instance(Table):
 
     def __init__(self, options, name, path_or_str=None):
         super().__init__(options, name, path_or_str)
-
-    def get_dts_docs(self):
-        """Get the xbrl model DTS documents.
-        
-        Usage:
-            metadata = table.get_dts_docs()
-        """
-        all_docs = list(self.xbrl_model.urlDocs.values())
-        for doc in all_docs:
-            print(f"URI: {doc.uri}")
-            print(f"Type: {doc.type}")  #example: 1 for SCHEMA, 2 for LINKBASE, 3 for INSTANCE
-            print("-" * 20)
-        return all_docs
-    
-    def get_facts(self):
-        """Get xbrl instance facts.
-        
-        Usage:
-            facts = table.get_facts()
-            print( facts[0].qname.localName )
-            print( facts[0].value )
-            print( facts[0].contextID )
-        """
-        if self.xbrl_model:
-            return list(self.xbrl_model.facts)
 
 
 class Taxonomy(Table):
